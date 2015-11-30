@@ -1,6 +1,10 @@
-# Route parser for Elm, based on parser combinators
+# Elm Route Parser
 
-Based on [jasonzoladz's gist](https://gist.github.com/jasonzoladz/b68475f4f3eced50d88f), with a bit of sugar syntax.
+A route parser in Elm, on top of parser combinators. Based on [jasonzoladz's gist](https://gist.github.com/jasonzoladz/b68475f4f3eced50d88f),
+with a bit of sugar syntax.
+
+Functions `static`, `dyn1`... returns instance of [Elm-Combine](http://package.elm-lang.org/packages/Bogdanp/elm-combine/latest) parsers, so you can just roll one of
+your own if those helpers are not enough for your use case.
 
 ## Usage
 
@@ -29,3 +33,9 @@ match routeParsers "/foo/foo" == Just (Foo "foo")
 match routeParsers "/bar/12-some-slug" == Just (Bar 12)
 match routeParsers "/baz/1/a/2/b/3/c" == Just (Baz 1 "2" 3)
 ```
+
+
+## Todo
+
+* Tests
+* Query string parsing
