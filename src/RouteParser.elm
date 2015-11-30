@@ -1,4 +1,4 @@
-module RouteParser (intParam, stringParam, static, dyn1, dyn2, dyn3, match, Url, Parsers) where
+module RouteParser (int, string, static, dyn1, dyn2, dyn3, match, Url, Parsers) where
 
 {-| A path parser for your web app routing, base on parser combinators.
 
@@ -6,7 +6,7 @@ module RouteParser (intParam, stringParam, static, dyn1, dyn2, dyn3, match, Url,
 @docs Url, Parsers
 
 # Path segment parsing
-@docs intParam, stringParam
+@docs int, string
 
 # Full path parsing
 @docs static, dyn1, dyn2, dyn3
@@ -15,9 +15,9 @@ module RouteParser (intParam, stringParam, static, dyn1, dyn2, dyn3, match, Url,
 @docs match
 -}
 
-import Combine exposing (Parser, string, parse, end, andThen, many1, while, many, skip, maybe, Result (..))
+import Combine exposing (Parser, parse, end, andThen, many1, while, many, skip, maybe, Result (..))
 import Combine.Char exposing (noneOf, char)
-import Combine.Num exposing (int)
+import Combine.Num as Num
 import Combine.Infix exposing ((<$>), (<$), (<*), (*>), (<*>), (<|>))
 
 import Maybe
@@ -34,14 +34,14 @@ type alias Parsers route = List (Parser route)
 
 
 {-| Extract an Int param -}
-intParam : Parser Int
-intParam =
-  int
+int : Parser Int
+int =
+  Num.int
 
 
 {-| Extract a String param -}
-stringParam : Parser String
-stringParam =
+string : Parser String
+string =
   String.fromList <$> many1 (noneOf [ '/', '#', '?' ])
 
 
@@ -54,7 +54,7 @@ stringParam =
 -}
 static : route -> String -> Parser route
 static route path =
-  route <$ (string path *> end)
+  route <$ (Combine.string path *> end)
 
 
 {-|  Parser for a path with one dynamic segment
@@ -66,7 +66,7 @@ static route path =
 -}
 dyn1 : (a -> route) -> String -> Parser a -> String -> Parser route
 dyn1 route s1 pa s2 =
-  route <$> (string s1 *> pa) <* string s2 <* end
+  route <$> (Combine.string s1 *> pa) <* Combine.string s2 <* end
 
 
 {-|  Parser for a path with two dynamic segments
@@ -78,8 +78,8 @@ dyn1 route s1 pa s2 =
 -}
 dyn2 : (a -> b -> route) -> String -> Parser a -> String -> Parser b -> String -> Parser route
 dyn2 route s1 pa s2 pb s3 =
-  route <$> ((string s1 *> pa)) `andThen`
-    (\r -> r <$> (string s2 *> pb <* string s3 <* end))
+  route <$> ((Combine.string s1 *> pa)) `andThen`
+    (\r -> r <$> (Combine.string s2 *> pb <* Combine.string s3 <* end))
 
 
 {-|  Parser for a path with three dynamic segments
@@ -91,9 +91,9 @@ dyn2 route s1 pa s2 pb s3 =
 -}
 dyn3 : (a -> b -> c -> route) -> String -> Parser a -> String -> Parser b -> String -> Parser c -> String -> Parser route
 dyn3 route s1 pa s2 pb s3 pc s4 =
-  route <$> ((string s1 *> pa)) `andThen`
-    (\r -> r <$> (string s2 *> pb)) `andThen`
-    (\r -> r <$> (string s3 *> pc <* string s4 <* end))
+  route <$> ((Combine.string s1 *> pa)) `andThen`
+    (\r -> r <$> (Combine.string s2 *> pb)) `andThen`
+    (\r -> r <$> (Combine.string s3 *> pc <* Combine.string s4 <* end))
 
 
 
