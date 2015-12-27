@@ -40,6 +40,27 @@ If the DSL isn't enough for your needs, you can also use one of those escape hat
 
 See [Elm-Combine](http://package.elm-lang.org/packages/Bogdanp/elm-combine/latest) for more information on parsers.
 
+
+### Route matching delegation
+
+Use `mapMatchers` to delegate a bunch of routes to a component:
+
+```elm
+    -- global routing:
+
+    type Route = Home | Admin AdminRoute
+
+    matchers =
+      [ static Home "/" ] ++ (mapMatchers Admin adminMatchers)
+
+    -- can be delegated to a component without knowdedge of global routing:
+
+    type AdminRoute = Dashboard | Users
+
+    adminMatchers =
+      [ static Dashboard "/admin", static Users "/users" ]
+```
+
 ### Reverse routing
 
 The reverse routeur has yet to be written manually:
