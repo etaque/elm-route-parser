@@ -58,7 +58,7 @@ Use `mapMatchers` to delegate a bunch of routes to a component:
     type AdminRoute = Dashboard | Users
 
     adminMatchers =
-      [ static Dashboard "/admin", static Users "/users" ]
+      [ static Dashboard "/admin", static Users "/admin/users" ]
 ```
 
 ### Reverse routing
