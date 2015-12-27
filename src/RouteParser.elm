@@ -1,6 +1,7 @@
 module RouteParser
   ( int, string, customParam, static, dyn1, dyn2, dyn3
   , parserMatcher, rawMatcher, match, router
+  , mapMatcher, mapMatchers
   , Matcher, Param, Router
   ) where
 
@@ -11,7 +12,7 @@ module RouteParser
 @docs int, string, customParam, static, dyn1, dyn2, dyn3
 
 # Other route matcher builders
-@docs parserMatcher, rawMatcher
+@docs parserMatcher, rawMatcher, mapMatcher, mapMatchers
 
 # Because eventually you'll have to run the router
 @docs match, router
@@ -129,6 +130,36 @@ dyn3 route s1 (P pa) s2 (P pb) s3 (P pc) s4 =
   parserMatcher <| route <$> ((Combine.string s1 *> pa)) `andThen`
     (\r -> r <$> (Combine.string s2 *> pb)) `andThen`
     (\r -> r <$> (Combine.string s3 *> pc <* Combine.string s4 <* end))
+
+
+{-| Map the result of the match -}
+mapMatcher : (a -> b) -> Matcher a -> Matcher b
+mapMatcher mapper (M matcher) =
+  let
+    newMatcher path = Maybe.map mapper (matcher path)
+  in
+    M newMatcher
+
+{-| map a list of matchers from a route type to another route type.
+Useful for subrouting, like delegating one of the routes to another type :
+
+    -- global routing:
+
+    type Route = Home | Admin AdminRoute
+
+    matchers =
+      [ static Home "/" ] ++ (mapMatchers Admin adminMatchers)
+
+    -- can be delegated to a component without knowdedge of global routing:
+
+    type AdminRoute = Dashboard | Users
+
+    adminMatchers =
+      [ static Dashboard "/admin", static Users "/users" ]
+ -}
+mapMatchers : (a -> b) -> List (Matcher a) -> List (Matcher b)
+mapMatchers wrapper matchers =
+  List.map (mapMatcher wrapper) matchers
 
 
 {-| Given a list of matchers and a path, return the first successful match of the path.
