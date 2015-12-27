@@ -1,18 +1,23 @@
-module RouteParser (int, string, static, dyn1, dyn2, dyn3, match, Url, Parsers) where
+module RouteParser
+  ( int, string, customParam, static, dyn1, dyn2, dyn3
+  , parserMatcher, rawMatcher, match, router
+  , Matcher, Param, Router
+  ) where
 
-{-| A path parser for your web app routing, base on parser combinators.
+{-| A typed router in Elm, with a nice DSL built on top of parser cominators
+(see [README](https://github.com/etaque/elm-route-parser) for usage).
+
+# DSL for simple cases
+@docs int, string, customParam, static, dyn1, dyn2, dyn3
+
+# Other route matcher builders
+@docs parserMatcher, rawMatcher
+
+# Because eventually you'll have to run the router
+@docs match, router
 
 # Types
-@docs Url, Parsers
-
-# Path segment parsing
-@docs int, string
-
-# Full path parsing
-@docs static, dyn1, dyn2, dyn3
-
-# Matching a path on a list of parsers
-@docs match
+@docs Matcher, Param, Router
 -}
 
 import Combine exposing (Parser, parse, end, andThen, many1, while, many, skip, maybe, Result (..))
@@ -25,93 +30,128 @@ import String
 import List
 
 
-{-| A String path -}
-type alias Url = String
+{-| A single route parser -}
+type Matcher route = M (String -> Maybe route)
 
+{-| A param parser in a route -}
+type Param a = P (Parser a)
 
-{-| A list of parsers -}
-type alias Parsers route = List (Parser route)
+{-| A router is composed of a route parser, and a path generator.
+ -}
+type alias Router route =
+  { fromPath : String -> Maybe route
+  , toPath : route -> String
+  }
 
 
 {-| Extract an Int param -}
-int : Parser Int
+int : Param Int
 int =
-  Num.int
+  P Num.int
 
 
 {-| Extract a String param -}
-string : Parser String
+string : Param String
 string =
-  String.fromList <$> many1 (noneOf [ '/', '#', '?' ])
+  P <| String.fromList <$> many1 (noneOf [ '/', '#', '?' ])
 
 
-{-| Parser for a static path
+{-| Build a custom param extractor from a parser instance -}
+customParam : Parser a -> Param a
+customParam =
+  P
+
+{-| Build a route from a raw matcher function -}
+rawMatcher : (String -> Maybe route) -> Matcher route
+rawMatcher matcher =
+  M matcher
+
+
+{-| Build a route from a Parser instance -}
+parserMatcher : Parser route -> Matcher route
+parserMatcher parser =
+  let
+    matcher path = case parse parser path of
+      (Done route, _) ->
+        Just route
+      _ ->
+        Nothing
+  in
+    rawMatcher matcher
+
+
+{-| Matcher for a static path.
 
     type Route = About
-    routes = [ static About "/about" ]
+    matchers = [ static About "/about" ]
 
-    match routes "/about" == Just About
+    match matchers "/about" == Just About
 -}
-static : route -> String -> Parser route
+static : route -> String -> Matcher route
 static route path =
-  route <$ (Combine.string path *> end)
+  parserMatcher <| route <$ (Combine.string path *> end)
 
 
-{-|  Parser for a path with one dynamic segment
+{-| Matcher for a path with one dynamic param.
 
     type Route = Topic Int
-    routes = [ dyn1 Topic "/topic/" intParam "/edit" ]
+    matchers = [ dyn1 Topic "/topic/" int "/edit" ]
 
-    match routes "/topic/1/edit" == Just (Topic 1)
+    match matchers "/topic/1/edit" == Just (Topic 1)
 -}
-dyn1 : (a -> route) -> String -> Parser a -> String -> Parser route
-dyn1 route s1 pa s2 =
-  route <$> (Combine.string s1 *> pa) <* Combine.string s2 <* end
+dyn1 : (a -> route) -> String -> Param a -> String -> Matcher route
+dyn1 route s1 (P pa) s2 =
+  parserMatcher <| route <$> (Combine.string s1 *> pa) <* Combine.string s2 <* end
 
 
-{-|  Parser for a path with two dynamic segments
+{-| Matcher for a path with two dynamic params.
 
     type Route = SubTopic Int Int
-    routes = [ dyn2 SubTopic "/topic/" intParam "/" intParam "" ]
+    matchers = [ dyn2 SubTopic "/topic/" int "/" int "" ]
 
-    match routes "/topic/1/2" == Just (SubTopic 1 2)
+    match matchers "/topic/1/2" == Just (SubTopic 1 2)
 -}
-dyn2 : (a -> b -> route) -> String -> Parser a -> String -> Parser b -> String -> Parser route
-dyn2 route s1 pa s2 pb s3 =
-  route <$> ((Combine.string s1 *> pa)) `andThen`
+dyn2 : (a -> b -> route) -> String -> Param a -> String -> Param b -> String -> Matcher route
+dyn2 route s1 (P pa) s2 (P pb) s3 =
+  parserMatcher <| route <$> ((Combine.string s1 *> pa)) `andThen`
     (\r -> r <$> (Combine.string s2 *> pb <* Combine.string s3 <* end))
 
 
-{-|  Parser for a path with three dynamic segments
+{-| Matcher for a path with three dynamic params.
 
     type Route = Something String String String
-    routes = [ dyn3 Something "/some/" stringParam "/thing/" stringParam "/here/" stringParam "" ]
+    matchers = [ dyn3 Something "/some/" string "/thing/" string "/here/" string "" ]
 
-    match routes "/some/cool/thing/must-be/here/i-guess" == Just (Something "cool" "must-be" "i-guess")
+    match matchers "/some/cool/thing/must-be/here/i-guess" == Just (Something "cool" "must-be" "i-guess")
 -}
-dyn3 : (a -> b -> c -> route) -> String -> Parser a -> String -> Parser b -> String -> Parser c -> String -> Parser route
-dyn3 route s1 pa s2 pb s3 pc s4 =
-  route <$> ((Combine.string s1 *> pa)) `andThen`
+dyn3 : (a -> b -> c -> route) -> String -> Param a -> String -> Param b -> String -> Param c -> String -> Matcher route
+dyn3 route s1 (P pa) s2 (P pb) s3 (P pc) s4 =
+  parserMatcher <| route <$> ((Combine.string s1 *> pa)) `andThen`
     (\r -> r <$> (Combine.string s2 *> pb)) `andThen`
     (\r -> r <$> (Combine.string s3 *> pc <* Combine.string s4 <* end))
 
 
-
-{-| Given a list of parsers and a path, find the first parser matching the path
+{-| Given a list of matchers and a path, return the first successful match of the path.
 -}
-match : Parsers route -> Url -> Maybe route
+match : List (Matcher route) -> String -> Maybe route
 match parsers url =
   List.foldl (matchUrl url) Nothing parsers
 
 
-matchUrl : Url -> Parser route -> Maybe route -> Maybe route
-matchUrl url parser maybeRoute =
+matchUrl : String -> Matcher route -> Maybe route -> Maybe route
+matchUrl path (M matcher) maybeRoute =
   case maybeRoute of
     Just _ ->
       maybeRoute
     Nothing ->
-      case parse parser url of
-        (Done route, _) ->
-          Just route
-        _ ->
-          Nothing
+      matcher path
+
+
+{-| Full-featured router. A record with two properties:
+
+* `fromPath` to maybe get the route from a path,
+* `toPath`to build the path from the route, typically for links in the views.
+ -}
+router : List (Matcher route) -> (route -> String) -> Router route
+router routeParsers pathGenerator =
+  Router (match routeParsers) pathGenerator
