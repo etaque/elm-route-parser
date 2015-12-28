@@ -2,10 +2,27 @@
 
 A typed router in Elm, with a nice DSL built on top of parser cominators. Designed to work well with `path` signal from [elm-history](http://package.elm-lang.org/packages/elm-community/elm-history/latest): just map an action on it and do a `RouteParser.match` to update your current route, then use this route to render the right view.
 
+Under the hood, it's basically a list of matchers `String -> Maybe Route`, and the first match wins. For that, there is a DSL tailored to mimic path shapes, ensuring typesafety with the power of parser combinators without the surface complexity:
+
+```elm
+"/some/dynamic/" int "/path"
+```
+
+If the dynamic param isn't parsable as an int, it won't match as an acceptable path for this route:
+
+```elm
+"/some/dynamic/1/path" -- match!
+"/some/dynamic/wrong/path" -- no match
+```
+
+
+Note that you can create and use custom param parsers, and custom matchers.
 
 ## Usage
 
 ### DSL
+
+Example:
 
 ```elm
 import RouteParser exposing (..)
@@ -24,11 +41,20 @@ matchers =
   , dyn3 Baz "/baz/" int "/a/" string "/b/" int "/c"
   ]
 
+-- static
 match matchers "/" == Just Home
+
+-- dyn1
 match matchers "/foo/foo" == Just (Foo "foo")
+
+-- dyn2
 match matchers "/bar/12-some-slug" == Just (Bar 12)
+match matchers "/bar/hey-some-slug" == Nothing
+
+--dyn3
 match matchers "/baz/1/a/2/b/3/c" == Just (Baz 1 "2" 3)
 ```
+
 
 ### Custom matchers
 
