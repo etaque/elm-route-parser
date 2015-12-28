@@ -1,6 +1,6 @@
 # Elm Route Parser
 
-A typed router in Elm, with a nice DSL built on top of parser cominators. Designed to work well with `path` signal from [elm-history](http://package.elm-lang.org/packages/elm-community/elm-history/latest): just map an action on it and do a `RouteParser.match` to update your current route, then use this route to render the right view.
+A typed router in Elm, with a nice DSL built on top of parser cominators. Designed to work well with `path` or `hash` signals from [elm-history](http://package.elm-lang.org/packages/elm-community/elm-history/latest): just map an action on it and do a `RouteParser.match` to update your current route, then use this route to render the right view.
 
 Under the hood, it's basically a list of matchers `String -> Maybe Route`, and the first match wins. For that, there is a DSL tailored to mimic path shapes, ensuring typesafety with the power of parser combinators without the surface complexity:
 
