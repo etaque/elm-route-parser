@@ -5,14 +5,14 @@ A typed router in Elm, with a nice DSL built on top of parser combinators. Desig
 Under the hood, it's basically a list of matchers `String -> Maybe Route`, and the first match wins. For that, there is a DSL tailored to mimic path shapes, ensuring typesafety with the power of parser combinators without the surface complexity:
 
 ```elm
-"/some/dynamic/" int "/path"
+"/some/" int "/path"
 ```
 
 If the dynamic param isn't parsable as an int, it won't match as an acceptable path for this route:
 
 ```elm
-"/some/dynamic/1/path" -- match!
-"/some/dynamic/wrong/path" -- no match
+"/some/1/path" -- match!
+"/some/wrong/path" -- no match
 ```
 
 
