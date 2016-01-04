@@ -51,7 +51,7 @@ match matchers "/foo/foo" == Just (Foo "foo")
 match matchers "/bar/12-some-slug" == Just (Bar 12)
 match matchers "/bar/hey-some-slug" == Nothing
 
---dyn3
+-- dyn3
 match matchers "/baz/1/a/2/b/3/c" == Just (Baz 1 "2" 3)
 ```
 
@@ -89,7 +89,7 @@ Use `mapMatchers` to delegate a bunch of routes to a component:
 
 ### Reverse routing
 
-The reverse routeur has yet to be written manually:
+The reverse router has yet to be written manually:
 
 ```elm
 
