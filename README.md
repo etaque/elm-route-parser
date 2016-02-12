@@ -2,9 +2,11 @@
 
 A typed route parser in Elm, with a nice DSL built on top of parser combinators. Designed to work well with `path` or `hash` signals from [elm-history](http://package.elm-lang.org/packages/elm-community/elm-history/latest): just map an action on it and do a `RouteParser.match` to update your current route, then use this route to render the right view.
 
-Note: see [elm-transit-router](https://github.com/etaque/elm-transit-router) for a full featured router compatible with this package.
+    elm package install etaque/elm-route-parser
 
-Under the hood, it's basically a list of matchers `String -> Maybe Route`, and the first match wins. For that, there is a DSL tailored to mimic path shapes, ensuring typesafety with the power of parser combinators without the surface complexity:
+Note: see [elm-transit-router](https://github.com/etaque/elm-transit-router) for a full featured SPA router compatible with this package.
+
+Under the hood, it's just a list of matchers `String -> Maybe Route`, and the first match wins. For that, there is a DSL tailored to mimic path shapes, ensuring typesafety with the power of parser combinators without the surface complexity:
 
 ```elm
 "/some/" int "/path"
@@ -19,6 +21,8 @@ If the dynamic param isn't parsable as an int, it won't match as an acceptable p
 
 
 Note that you can create and use custom param parsers, and custom matchers.
+
+A query string parser is also available under `RouteParser.QueryString` module: `parse : String -> Dict String (List String)`.
 
 ## Usage
 
