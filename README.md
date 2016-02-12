@@ -109,8 +109,8 @@ Glad to take any PR on that part, there is room for improvement.
 
 ## Todo
 
-* Tests
-* Query string parsing
+[x] Tests
+[ ] Query string parsing
 
 
 ## Credits
