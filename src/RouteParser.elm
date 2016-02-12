@@ -21,7 +21,7 @@ module RouteParser
 @docs Matcher, Param, Router
 -}
 
-import Combine exposing (Parser, parse, end, andThen, many1, while, many, skip, maybe, Result (..))
+import Combine exposing (Parser, parse, end, andThen, map, andMap, many1, while, many, skip, maybe, Result (..))
 import Combine.Char exposing (noneOf, char)
 import Combine.Num as Num
 import Combine.Infix exposing ((<$>), (<$), (<*), (*>), (<*>), (<|>))
@@ -29,6 +29,9 @@ import Combine.Infix exposing ((<$>), (<$), (<*), (*>), (<*>), (<|>))
 import Maybe
 import String
 import List
+import Dict exposing (Dict)
+
+import RouteParser.Parser as Parser exposing (..)
 
 
 {-| A single route parser -}
@@ -54,7 +57,7 @@ int =
 {-| Extract a String param -}
 string : Param String
 string =
-  P <| String.fromList <$> many1 (noneOf [ '/', '#', '?' ])
+  P stringParam
 
 
 {-| Build a custom param extractor from a parser instance -}

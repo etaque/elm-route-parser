@@ -1,7 +1,10 @@
 module Tests where
 
+import Dict exposing (Dict)
 import ElmTest exposing (..)
+
 import RouteParser exposing (..)
+import RouteParser.QueryString as QueryString
 
 
 type Route
@@ -9,6 +12,7 @@ type Route
   | Foo String
   | Bar Int
   | Baz Int String Int
+  | Taz (List (String, String))
 
 
 matchers : List (Matcher Route)
@@ -23,6 +27,13 @@ matchers =
 all : Test
 all =
   suite "all"
+    [ pathSuite, queryStringSuite ]
+
+
+pathSuite : Test
+pathSuite =
+  suite "path"
+
     [ test "static" <|
         assertMatch "/" Home
 
@@ -42,10 +53,25 @@ all =
 
 assertMatch : String -> Route -> Assertion
 assertMatch path route =
-  assertEqual (match matchers path) (Just route)
+  assertEqual (Just route) (match matchers path)
 
 
 assertNoMatch : String -> Assertion
 assertNoMatch path =
-  assertEqual (match matchers path) Nothing
+  assertEqual Nothing (match matchers path)
+
+
+queryStringSuite : Test
+queryStringSuite =
+  suite "query string"
+
+    [ test "query string with list" <|
+        assertEqual [("aaa", ["1"]), ("bb", ["2", "3"])] (QueryString.parse "?aaa=1&bb=2&bb=3" |> Dict.toList)
+
+    , test "empty query string" <|
+        assertEqual [] (QueryString.parse "" |> Dict.toList)
+
+    , test "missing values" <|
+        assertEqual [] (QueryString.parse "?a=&b=" |> Dict.toList)
+    ]
 
