@@ -1,8 +1,8 @@
-module RouteParser.QueryString (parse) where
+module RouteParser.QueryString (QueryString, parse) where
 
 {-| Tools for query string parsing and extraction
 
-@docs parse
+@docs QueryString, parse
 -}
 
 
@@ -12,11 +12,12 @@ import Combine exposing (Result(..))
 import RouteParser.Parser as Parser
 
 
+{-| A parsed query string is a Dict of param names to param value list. -}
 type alias QueryString =
   Dict String (List String)
 
 
-{-| Parse a query string as a `Dict String (List String)`. -}
+{-| Parse a query string. Parsed string must include the leading "?" char. -}
 parse : String -> QueryString
 parse s =
   case Combine.parse Parser.queryString s of
