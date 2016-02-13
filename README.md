@@ -1,10 +1,10 @@
 # Elm Route Parser
 
-A typed route parser in Elm, with a nice DSL built on top of parser combinators. Designed to work well with `path` or `hash` signals from [elm-history](http://package.elm-lang.org/packages/elm-community/elm-history/latest): just map an action on it and do a `RouteParser.match` to update your current route, then use this route to render the right view.
-
     elm package install etaque/elm-route-parser
 
-Note: see [elm-transit-router](https://github.com/etaque/elm-transit-router) for a full featured SPA router compatible with this package.
+A typed route parser in Elm, with a nice DSL built on top of parser combinators. Designed to work well with `path` or `hash` signals from [elm-history](http://package.elm-lang.org/packages/elm-community/elm-history/latest): just map an action on it and do a `RouteParser.match` to update your current route, then use this route to render the right view.
+
+> See [elm-transit-router](https://github.com/etaque/elm-transit-router) for a full featured SPA router compatible with this package.
 
 Under the hood, it's just a list of matchers `String -> Maybe Route`, and the first match wins. For that, there is a DSL tailored to mimic path shapes, ensuring typesafety with the power of parser combinators without the surface complexity:
 
@@ -22,7 +22,6 @@ If the dynamic param isn't parsable as an int, it won't match as an acceptable p
 
 Note that you can create and use custom param parsers, and custom matchers.
 
-A query string parser is also available under `RouteParser.QueryString` module: `parse : String -> Dict String (List String)`.
 
 ## Usage
 
@@ -98,7 +97,6 @@ Use `mapMatchers` to delegate a bunch of routes to a component:
 The reverse router has yet to be written manually:
 
 ```elm
-
 toPath : Route -> String
 toPath route =
   case route of
@@ -111,10 +109,24 @@ toPath route =
 Glad to take any PR on that part, there is room for improvement.
 
 
-## Todo
+### Query string
 
-- [x] Tests
-- [ ] Query string parsing
+A query string parser is also available under `RouteParser.QueryString` module:
+
+```elm
+import RouteParser.QueryString as QueryString
+
+queryStringPart : String
+queryStringPart =
+  "?foo=1&bar=baz&bar=taz"
+
+params : String -> Dict String (List String)
+params = 
+  QueryString.parse queryStringPart
+  
+-- Dict.get "foo" params == Just "1"
+-- Dict.get "bar" params == Just [ "baz", "taz" ]
+```
 
 
 ## Credits
