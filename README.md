@@ -124,7 +124,7 @@ params : String -> Dict String (List String)
 params = 
   QueryString.parse queryStringPart
   
--- Dict.get "foo" params == Just "1"
+-- Dict.get "foo" params == Just [ "1" ]
 -- Dict.get "bar" params == Just [ "baz", "taz" ]
 ```
 
