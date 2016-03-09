@@ -1,8 +1,7 @@
-module Tests where
+module Tests (..) where
 
 import Dict exposing (Dict)
 import ElmTest exposing (..)
-
 import RouteParser exposing (..)
 import RouteParser.QueryString as QueryString
 
@@ -12,7 +11,7 @@ type Route
   | Foo String
   | Bar Int
   | Baz Int String Int
-  | Taz (List (String, String))
+  | Taz (List ( String, String ))
 
 
 matchers : List (Matcher Route)
@@ -26,28 +25,25 @@ matchers =
 
 all : Test
 all =
-  suite "all"
+  suite
+    "all"
     [ pathSuite, queryStringSuite ]
 
 
 pathSuite : Test
 pathSuite =
-  suite "path"
-
-    [ test "static" <|
-        assertMatch "/" Home
-
-    , test "dyn1 on string" <|
-        assertMatch "/foo/foo" (Foo "foo")
-
-    , test "dyn2 on int with ignored slug" <|
-        assertMatch "/bar/12-some-slug" (Bar 12)
-
-    , test "dyn3 on string and int" <|
-        assertMatch "/baz/1/a/2/b/3/c" (Baz 1 "2" 3)
-
-    , test "incorrect int" <|
-        assertNoMatch "/bar/2a-some-slug"
+  suite
+    "path"
+    [ test "static"
+        <| assertMatch "/" Home
+    , test "dyn1 on string"
+        <| assertMatch "/foo/foo" (Foo "foo")
+    , test "dyn2 on int with ignored slug"
+        <| assertMatch "/bar/12-some-slug" (Bar 12)
+    , test "dyn3 on string and int"
+        <| assertMatch "/baz/1/a/2/b/3/c" (Baz 1 "2" 3)
+    , test "incorrect int"
+        <| assertNoMatch "/bar/2a-some-slug"
     ]
 
 
@@ -63,15 +59,12 @@ assertNoMatch path =
 
 queryStringSuite : Test
 queryStringSuite =
-  suite "query string"
-
-    [ test "query string with list" <|
-        assertEqual [("aaa", ["1"]), ("bb", ["2", "3"])] (QueryString.parse "?aaa=1&bb=2&bb=3" |> Dict.toList)
-
-    , test "empty query string" <|
-        assertEqual [] (QueryString.parse "" |> Dict.toList)
-
-    , test "missing values" <|
-        assertEqual [] (QueryString.parse "?a=&b=" |> Dict.toList)
+  suite
+    "query string"
+    [ test "query string with list"
+        <| assertEqual [ ( "aaa", [ "1" ] ), ( "bb", [ "2", "3" ] ) ] (QueryString.parse "?aaa=1&bb=2&bb=3" |> Dict.toList)
+    , test "empty query string"
+        <| assertEqual [] (QueryString.parse "" |> Dict.toList)
+    , test "missing values"
+        <| assertEqual [] (QueryString.parse "?a=&b=" |> Dict.toList)
     ]
-

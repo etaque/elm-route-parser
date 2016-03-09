@@ -1,9 +1,4 @@
-module RouteParser
-  ( int, string, customParam, static, dyn1, dyn2, dyn3
-  , parserMatcher, rawMatcher, match, router
-  , mapMatcher, mapMatchers
-  , Matcher, Param, Router
-  ) where
+module RouteParser (int, string, customParam, static, dyn1, dyn2, dyn3, parserMatcher, rawMatcher, match, router, mapMatcher, mapMatchers, Matcher, Param, Router) where
 
 {-| A typed router in Elm, with a nice DSL built on top of parser cominators
 (see [README](https://github.com/etaque/elm-route-parser) for usage).
@@ -21,65 +16,74 @@ module RouteParser
 @docs Matcher, Param, Router
 -}
 
-import Combine exposing (Parser, parse, end, andThen, map, andMap, many1, while, many, skip, maybe, Result (..))
-import Combine.Char exposing (noneOf, char)
+import Combine exposing (Parser, parse, end, andThen, map, andMap, many1, while, many, skip, maybe, Result(..))
 import Combine.Num as Num
 import Combine.Infix exposing ((<$>), (<$), (<*), (*>), (<*>), (<|>))
-
 import Maybe
-import String
 import List
-import Dict exposing (Dict)
-
 import RouteParser.Parser as Parser exposing (..)
 
 
-{-| A single route parser -}
-type Matcher route = M (String -> Maybe route)
+{-| A single route parser
+-}
+type Matcher route
+  = M (String -> Maybe route)
 
-{-| A param parser in a route -}
-type Param a = P (Parser a)
+
+{-| A param parser in a route
+-}
+type Param a
+  = P (Parser a)
+
 
 {-| A router is composed of a route parser, and a path generator.
- -}
+-}
 type alias Router route =
   { fromPath : String -> Maybe route
   , toPath : route -> String
   }
 
 
-{-| Extract an Int param -}
+{-| Extract an Int param
+-}
 int : Param Int
 int =
   P Num.int
 
 
-{-| Extract a String param -}
+{-| Extract a String param
+-}
 string : Param String
 string =
   P stringParam
 
 
-{-| Build a custom param extractor from a parser instance -}
+{-| Build a custom param extractor from a parser instance
+-}
 customParam : Parser a -> Param a
 customParam =
   P
 
-{-| Build a route from a raw matcher function -}
+
+{-| Build a route from a raw matcher function
+-}
 rawMatcher : (String -> Maybe route) -> Matcher route
 rawMatcher matcher =
   M matcher
 
 
-{-| Build a route from a Parser instance -}
+{-| Build a route from a Parser instance
+-}
 parserMatcher : Parser route -> Matcher route
 parserMatcher parser =
   let
-    matcher path = case parse parser path of
-      (Done route, _) ->
-        Just route
-      _ ->
-        Nothing
+    matcher path =
+      case parse parser path of
+        ( Done route, _ ) ->
+          Just route
+
+        _ ->
+          Nothing
   in
     rawMatcher matcher
 
@@ -117,8 +121,10 @@ dyn1 route s1 (P pa) s2 =
 -}
 dyn2 : (a -> b -> route) -> String -> Param a -> String -> Param b -> String -> Matcher route
 dyn2 route s1 (P pa) s2 (P pb) s3 =
-  parserMatcher <| route <$> ((Combine.string s1 *> pa)) `andThen`
-    (\r -> r <$> (Combine.string s2 *> pb <* Combine.string s3 <* end))
+  parserMatcher
+    <| route
+    <$> ((Combine.string s1 *> pa))
+    `andThen` (\r -> r <$> (Combine.string s2 *> pb <* Combine.string s3 <* end))
 
 
 {-| Matcher for a path with three dynamic params.
@@ -130,18 +136,23 @@ dyn2 route s1 (P pa) s2 (P pb) s3 =
 -}
 dyn3 : (a -> b -> c -> route) -> String -> Param a -> String -> Param b -> String -> Param c -> String -> Matcher route
 dyn3 route s1 (P pa) s2 (P pb) s3 (P pc) s4 =
-  parserMatcher <| route <$> ((Combine.string s1 *> pa)) `andThen`
-    (\r -> r <$> (Combine.string s2 *> pb)) `andThen`
-    (\r -> r <$> (Combine.string s3 *> pc <* Combine.string s4 <* end))
+  parserMatcher
+    <| route
+    <$> ((Combine.string s1 *> pa))
+    `andThen` (\r -> r <$> (Combine.string s2 *> pb))
+    `andThen` (\r -> r <$> (Combine.string s3 *> pc <* Combine.string s4 <* end))
 
 
-{-| Map the result of the match -}
+{-| Map the result of the match
+-}
 mapMatcher : (a -> b) -> Matcher a -> Matcher b
 mapMatcher mapper (M matcher) =
   let
-    newMatcher path = Maybe.map mapper (matcher path)
+    newMatcher path =
+      Maybe.map mapper (matcher path)
   in
     M newMatcher
+
 
 {-| map a list of matchers from a route type to another route type.
 Useful for subrouting, like delegating one of the routes to another type :
@@ -159,7 +170,7 @@ Useful for subrouting, like delegating one of the routes to another type :
 
     adminMatchers =
       [ static Dashboard "/admin", static Users "/users" ]
- -}
+-}
 mapMatchers : (a -> b) -> List (Matcher a) -> List (Matcher b)
 mapMatchers wrapper matchers =
   List.map (mapMatcher wrapper) matchers
@@ -177,6 +188,7 @@ matchUrl path (M matcher) maybeRoute =
   case maybeRoute of
     Just _ ->
       maybeRoute
+
     Nothing ->
       matcher path
 
@@ -185,7 +197,7 @@ matchUrl path (M matcher) maybeRoute =
 
 * `fromPath` to maybe get the route from a path,
 * `toPath`to build the path from the route, typically for links in the views.
- -}
+-}
 router : List (Matcher route) -> (route -> String) -> Router route
 router routeParsers pathGenerator =
   Router (match routeParsers) pathGenerator
