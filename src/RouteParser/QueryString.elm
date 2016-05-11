@@ -1,4 +1,4 @@
-module RouteParser.QueryString (QueryString, parse) where
+module RouteParser.QueryString exposing (QueryString, parse)
 
 {-| Tools for query string parsing and extraction
 
@@ -6,7 +6,7 @@ module RouteParser.QueryString (QueryString, parse) where
 -}
 
 import Dict exposing (Dict)
-import Combine exposing (Result(..))
+import Combine
 import RouteParser.Parser as Parser
 
 
@@ -21,7 +21,7 @@ type alias QueryString =
 parse : String -> QueryString
 parse s =
   case Combine.parse Parser.queryString s of
-    ( Done list, _ ) ->
+    ( Ok list, _ ) ->
       fromList list
 
     _ ->

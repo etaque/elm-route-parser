@@ -1,4 +1,4 @@
-module RouteParser (int, string, customParam, static, dyn1, dyn2, dyn3, parserMatcher, rawMatcher, match, router, mapMatcher, mapMatchers, Matcher, Param, Router) where
+module RouteParser exposing (int, string, customParam, static, dyn1, dyn2, dyn3, parserMatcher, rawMatcher, match, router, mapMatcher, mapMatchers, Matcher, Param, Router)
 
 {-| A typed router in Elm, with a nice DSL built on top of parser cominators
 (see [README](https://github.com/etaque/elm-route-parser) for usage).
@@ -16,7 +16,7 @@ module RouteParser (int, string, customParam, static, dyn1, dyn2, dyn3, parserMa
 @docs Matcher, Param, Router
 -}
 
-import Combine exposing (Parser, parse, end, andThen, map, andMap, many1, while, many, skip, maybe, Result(..))
+import Combine exposing (Parser, parse, end, andThen, map, andMap, many1, while, many, skip, maybe)
 import Combine.Num as Num
 import Combine.Infix exposing ((<$>), (<$), (<*), (*>), (<*>), (<|>))
 import Maybe
@@ -79,7 +79,7 @@ parserMatcher parser =
   let
     matcher path =
       case parse parser path of
-        ( Done route, _ ) ->
+        ( Ok route, _ ) ->
           Just route
 
         _ ->
