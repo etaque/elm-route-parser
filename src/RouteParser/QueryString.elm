@@ -13,29 +13,29 @@ import RouteParser.Parser as Parser
 {-| A parsed query string is a Dict of param names to param value list.
 -}
 type alias QueryString =
-  Dict String (List String)
+    Dict String (List String)
 
 
 {-| Parse a query string. Parsed string must include the leading "?" char.
 -}
 parse : String -> QueryString
 parse s =
-  case Combine.parse Parser.queryString s of
-    ( Ok list, _ ) ->
-      fromList list
+    case Combine.parse Parser.queryString s of
+        Ok ( _, _, list ) ->
+            fromList list
 
-    _ ->
-      Dict.empty
+        _ ->
+            Dict.empty
 
 
 fromList : List ( String, String ) -> QueryString
 fromList items =
-  let
-    addItem ( key, value ) dict =
-      let
-        keyValues =
-          Dict.get key dict |> Maybe.withDefault []
-      in
-        Dict.insert key (value :: keyValues) dict
-  in
-    List.foldr addItem Dict.empty items
+    let
+        addItem ( key, value ) dict =
+            let
+                keyValues =
+                    Dict.get key dict |> Maybe.withDefault []
+            in
+                Dict.insert key (value :: keyValues) dict
+    in
+        List.foldr addItem Dict.empty items

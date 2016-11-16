@@ -16,9 +16,8 @@ module RouteParser exposing (int, string, customParam, static, dyn1, dyn2, dyn3,
 @docs Matcher, Param, Router
 -}
 
-import Combine exposing (Parser, parse, end, andThen, map, andMap, many1, while, many, skip, maybe)
+import Combine exposing (Parser, parse, end, andThen, map, andMap, many1, while, many, skip, maybe, (<$>), (<$), (<*), (*>), (<*>), (<|>))
 import Combine.Num as Num
-import Combine.Infix exposing ((<$>), (<$), (<*), (*>), (<*>), (<|>))
 import Maybe
 import List
 import RouteParser.Parser as Parser exposing (..)
@@ -27,65 +26,75 @@ import RouteParser.Parser as Parser exposing (..)
 {-| A single route parser
 -}
 type Matcher route
-  = M (String -> Maybe route)
+    = M (String -> Maybe route)
 
 
 {-| A param parser in a route
 -}
 type Param a
-  = P (Parser a)
+    = P (Parser () a)
 
 
 {-| A router is composed of a route parser, and a path generator.
 -}
 type alias Router route =
-  { fromPath : String -> Maybe route
-  , toPath : route -> String
-  }
+    { fromPath : String -> Maybe route
+    , toPath : route -> String
+    }
 
 
 {-| Extract an Int param
 -}
 int : Param Int
 int =
-  P Num.int
+    P Num.int
 
 
 {-| Extract a String param
 -}
 string : Param String
 string =
-  P stringParam
+    P stringParam
 
 
 {-| Build a custom param extractor from a parser instance
 -}
-customParam : Parser a -> Param a
+customParam : Parser () a -> Param a
 customParam =
-  P
+    P
 
 
 {-| Build a route from a raw matcher function
 -}
 rawMatcher : (String -> Maybe route) -> Matcher route
 rawMatcher matcher =
-  M matcher
+    M matcher
 
 
 {-| Build a route from a Parser instance
 -}
-parserMatcher : Parser route -> Matcher route
+parserMatcher : Parser () route -> Matcher route
 parserMatcher parser =
-  let
-    matcher path =
-      case parse parser path of
-        ( Ok route, _ ) ->
-          Just route
+    let
+        matcher path =
+            case parse parser path of
+                Ok ( _, _, route ) ->
+                    Just route
 
-        _ ->
-          Nothing
-  in
-    rawMatcher matcher
+                _ ->
+                    Nothing
+    in
+        rawMatcher matcher
+
+
+staticParser : String -> route -> Parser () route
+staticParser path route =
+    route <$ (Combine.string path *> end)
+
+
+dynParser : String -> Parser () a -> (a -> route) -> Parser () route
+dynParser path aParser toRoute =
+    map toRoute (Combine.string path *> aParser)
 
 
 {-| Matcher for a static path.
@@ -97,7 +106,8 @@ parserMatcher parser =
 -}
 static : route -> String -> Matcher route
 static route path =
-  parserMatcher <| route <$ (Combine.string path *> end)
+    staticParser path route
+        |> parserMatcher
 
 
 {-| Matcher for a path with one dynamic param.
@@ -108,8 +118,10 @@ static route path =
     match matchers "/topic/1/edit" == Just (Topic 1)
 -}
 dyn1 : (a -> route) -> String -> Param a -> String -> Matcher route
-dyn1 route s1 (P pa) s2 =
-  parserMatcher <| route <$> (Combine.string s1 *> pa) <* Combine.string s2 <* end
+dyn1 toRoute s1 (P aParser) s2 =
+    dynParser s1 aParser toRoute
+        |> andThen (staticParser s2)
+        |> parserMatcher
 
 
 {-| Matcher for a path with two dynamic params.
@@ -120,11 +132,11 @@ dyn1 route s1 (P pa) s2 =
     match matchers "/topic/1/2" == Just (SubTopic 1 2)
 -}
 dyn2 : (a -> b -> route) -> String -> Param a -> String -> Param b -> String -> Matcher route
-dyn2 route s1 (P pa) s2 (P pb) s3 =
-  parserMatcher
-    <| route
-    <$> ((Combine.string s1 *> pa))
-    `andThen` (\r -> r <$> (Combine.string s2 *> pb <* Combine.string s3 <* end))
+dyn2 toRoute s1 (P aParser) s2 (P bParser) s3 =
+    dynParser s1 aParser toRoute
+        |> andThen (dynParser s2 bParser)
+        |> andThen (staticParser s3)
+        |> parserMatcher
 
 
 {-| Matcher for a path with three dynamic params.
@@ -135,23 +147,23 @@ dyn2 route s1 (P pa) s2 (P pb) s3 =
     match matchers "/some/cool/thing/must-be/here/i-guess" == Just (Something "cool" "must-be" "i-guess")
 -}
 dyn3 : (a -> b -> c -> route) -> String -> Param a -> String -> Param b -> String -> Param c -> String -> Matcher route
-dyn3 route s1 (P pa) s2 (P pb) s3 (P pc) s4 =
-  parserMatcher
-    <| route
-    <$> ((Combine.string s1 *> pa))
-    `andThen` (\r -> r <$> (Combine.string s2 *> pb))
-    `andThen` (\r -> r <$> (Combine.string s3 *> pc <* Combine.string s4 <* end))
+dyn3 toRoute s1 (P aParser) s2 (P bParser) s3 (P cParser) s4 =
+    dynParser s1 aParser toRoute
+        |> andThen (dynParser s2 bParser)
+        |> andThen (dynParser s3 cParser)
+        |> andThen (staticParser s4)
+        |> parserMatcher
 
 
 {-| Map the result of the match
 -}
 mapMatcher : (a -> b) -> Matcher a -> Matcher b
 mapMatcher mapper (M matcher) =
-  let
-    newMatcher path =
-      Maybe.map mapper (matcher path)
-  in
-    M newMatcher
+    let
+        newMatcher path =
+            Maybe.map mapper (matcher path)
+    in
+        M newMatcher
 
 
 {-| map a list of matchers from a route type to another route type.
@@ -173,24 +185,24 @@ Useful for subrouting, like delegating one of the routes to another type :
 -}
 mapMatchers : (a -> b) -> List (Matcher a) -> List (Matcher b)
 mapMatchers wrapper matchers =
-  List.map (mapMatcher wrapper) matchers
+    List.map (mapMatcher wrapper) matchers
 
 
 {-| Given a list of matchers and a path, return the first successful match of the path.
 -}
 match : List (Matcher route) -> String -> Maybe route
 match parsers url =
-  List.foldl (matchUrl url) Nothing parsers
+    List.foldl (matchUrl url) Nothing parsers
 
 
 matchUrl : String -> Matcher route -> Maybe route -> Maybe route
 matchUrl path (M matcher) maybeRoute =
-  case maybeRoute of
-    Just _ ->
-      maybeRoute
+    case maybeRoute of
+        Just _ ->
+            maybeRoute
 
-    Nothing ->
-      matcher path
+        Nothing ->
+            matcher path
 
 
 {-| Full-featured router. A record with two properties:
@@ -200,4 +212,4 @@ matchUrl path (M matcher) maybeRoute =
 -}
 router : List (Matcher route) -> (route -> String) -> Router route
 router routeParsers pathGenerator =
-  Router (match routeParsers) pathGenerator
+    Router (match routeParsers) pathGenerator
