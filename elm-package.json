@@ -1,5 +1,5 @@
 {
-    "version": "2.2.1",
+    "version": "3.0.0",
     "summary": "A friendly route parser based on parser combinators",
     "repository": "https://github.com/etaque/elm-route-parser.git",
     "license": "BSD3",
